@@ -1,12 +1,14 @@
 {
   "name": "bielsasys",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Sistema B2B Hortofrutícola — Proyecto ASIR",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Leandro Bielsa Raro",
   "license": "ISC"
 }
