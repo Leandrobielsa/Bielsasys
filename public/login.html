@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BielsaSys — Acceso Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0e0f0a;--card:#1c1e14;--border:#2a2d1e;--accent:#a8c45a;--red:#e05a5a;--text:#e8e6dc;--muted:#7a7d6a;--white:#f5f4ee}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+  /* Fondo animado */
+  .bg-glow{position:fixed;inset:0;z-index:0;
+    background:radial-gradient(ellipse 60% 50% at 50% 50%, rgba(168,196,90,.06) 0%, transparent 70%)}
+  .bg-grid{position:fixed;inset:0;z-index:0;
+    background-image:linear-gradient(rgba(168,196,90,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(168,196,90,.04) 1px,transparent 1px);
+    background-size:40px 40px}
+
+  .login-wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:1.5rem}
+
+  /* Logo */
+  .login-logo{text-align:center;margin-bottom:2.5rem}
+  .login-logo .wordmark{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--white)}
+  .login-logo .wordmark span{color:var(--accent)}
+  .login-logo .sub{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}
+
+  /* Card */
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:2.5rem;
+    box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+  .card-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--white);margin-bottom:.4rem}
+  .card-sub{font-size:.83rem;color:var(--muted);margin-bottom:2rem}
+
+  .form-group{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.4rem}
+  .form-group label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  .input-wrap{position:relative}
+  .input-wrap input{
+    width:100%;background:var(--bg);border:1px solid var(--border);
+    color:var(--text);padding:.75rem 2.8rem .75rem 1rem;border-radius:3px;
+    font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;
+    transition:border-color .2s,box-shadow .2s
+  }
+  .input-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,196,90,.1)}
+  .input-wrap input.error{border-color:var(--red)}
+  .toggle-pass{position:absolute;right:.8rem;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;
+    transition:color .2s;padding:0;line-height:1}
+  .toggle-pass:hover{color:var(--accent)}
+
+  .btn-login{
+    width:100%;background:var(--accent);color:#0e0f0a;
+    padding:.85rem;border-radius:3px;border:none;
+    font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:500;
+    letter-spacing:.04em;cursor:pointer;transition:all .2s;
+    position:relative;overflow:hidden
+  }
+  .btn-login:hover{background:#c0dd6a;transform:translateY(-1px)}
+  .btn-login:active{transform:translateY(0)}
+  .btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .btn-login .spinner{
+    display:none;width:18px;height:18px;border:2px solid rgba(0,0,0,.3);
+    border-top-color:#0e0f0a;border-radius:50%;animation:spin .7s linear infinite;
+    position:absolute;right:1.2rem;top:50%;transform:translateY(-50%)
+  }
+  .btn-login.loading .spinner{display:block}
+  .btn-login.loading .btn-text{opacity:.7}
+
+  /* Error message */
+  .error-msg{
+    display:none;background:rgba(224,90,90,.1);border:1px solid rgba(224,90,90,.25);
+    border-radius:3px;padding:.7rem 1rem;
+    font-size:.83rem;color:var(--red);margin-bottom:1.2rem;
+    align-items:center;gap:.5rem
+  }
+  .error-msg.show{display:flex}
+
+  /* Back link */
+  .back-link{display:block;text-align:center;margin-top:1.5rem;
+    font-size:.8rem;color:var(--muted);text-decoration:none;transition:color .2s}
+  .back-link:hover{color:var(--accent)}
+
+  /* Shake animation for wrong password */
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  .shake{animation:shake .4s ease}
+
+  @keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .login-card{animation:fadeUp .4s ease}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+
+<div class="login-wrap">
+  <div class="login-logo">
+    <div class="wordmark">Bielsa<span>Sys</span></div>
+    <div class="sub">Panel de Administración</div>
+  </div>
+
+  <div class="login-card" id="loginCard">
+    <div class="card-title">Iniciar sesión</div>
+    <div class="card-sub">Acceso restringido a administradores.</div>
+
+    <div class="error-msg" id="errorMsg">
+      <span>⚠</span><span id="errorText">Usuario o contraseña incorrectos.</span>
+    </div>
+
+    <div class="form-group">
+      <label>Usuario</label>
+      <div class="input-wrap">
+        <input type="text" id="username" placeholder="admin" autocomplete="username" onkeydown="onEnter(event)">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="••••••••••" autocomplete="current-password" onkeydown="onEnter(event)">
+        <button class="toggle-pass" onclick="togglePass()" type="button" title="Mostrar/ocultar">👁</button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <span class="btn-text">Entrar al panel →</span>
+      <span class="spinner"></span>
+    </button>
+  </div>
+
+  <a href="/" class="back-link">← Volver a la tienda</a>
+</div>
+
+<script>
+  // Si ya tiene token válido, redirigir directo al admin
+  (async () => {
+    const token = sessionStorage.getItem('bielsa_token');
+    if (!token) return;
+    try {
+      const r = await fetch('/api/auth/check', {headers:{Authorization:'Bearer '+token}});
+      if (r.ok) window.location.href = '/admin';
+    } catch {}
+  })();
+
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('loginBtn');
+    const errMsg   = document.getElementById('errorMsg');
+
+    if (!username || !password) {
+      showError('Introduce usuario y contraseña.'); return;
+    }
+
+    // Loading state
+    btn.disabled = true;
+    btn.classList.add('loading');
+    errMsg.classList.remove('show');
+
+    try {
+      const res  = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({username, password})
+      });
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        // Guardar token en sessionStorage (se borra al cerrar el navegador)
+        sessionStorage.setItem('bielsa_token', data.token);
+        // Redirigir al admin
+        window.location.href = '/admin';
+      } else {
+        showError(data.error || 'Credenciales incorrectas.');
+      }
+    } catch(e) {
+      showError('No se pudo conectar con el servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+
+  function showError(msg) {
+    const card = document.getElementById('loginCard');
+    document.getElementById('errorText').textContent = msg;
+    document.getElementById('errorMsg').classList.add('show');
+    document.getElementById('password').classList.add('error');
+    card.classList.remove('shake');
+    void card.offsetWidth; // reflow para reiniciar animación
+    card.classList.add('shake');
+    setTimeout(() => document.getElementById('password').classList.remove('error'), 2000);
+  }
+
+  function togglePass() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function onEnter(e) {
+    if (e.key === 'Enter') doLogin();
+  }
+</script>
+</body>
+</html>

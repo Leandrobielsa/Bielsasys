@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BielsaSys — Portal Cliente</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0f0a;--surface:#161710;--card:#1c1e14;--border:#2a2d1e;--accent:#a8c45a;--accent2:#e8b84b;--red:#e05a5a;--blue:#5a9fe0;--text:#e8e6dc;--muted:#7a7d6a;--white:#f5f4ee}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh}
+
+/* Fondo decorativo — pointer-events:none para que NUNCA bloquee clics */
+.bg-glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 50%,rgba(168,196,90,.05),transparent 70%)}
+
+/* LOGIN VIEW — oculto por defecto, se muestra por JS */
+.login-view{
+  display:none;position:relative;z-index:1;
+  min-height:100vh;align-items:center;justify-content:center;padding:2rem;
+}
+.login-view.active{display:flex}
+
+.login-wrap{width:100%;max-width:400px}
+.logo{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--white);text-align:center;margin-bottom:.3rem}
+.logo span{color:var(--accent)}
+.logo small{display:block;font-family:'DM Sans',sans-serif;font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:2rem;margin-top:1.8rem;animation:fadeUp .4s ease}
+.login-card h2{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--white);margin-bottom:.3rem}
+.login-card p{font-size:.82rem;color:var(--muted);margin-bottom:1.8rem}
+.fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.fg label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fg input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;width:100%}
+.fg input:focus{border-color:var(--accent)}
+.btn-login{width:100%;background:var(--accent);color:#0e0f0a;padding:.8rem;border-radius:2px;border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;margin-top:.4rem}
+.btn-login:hover{background:#c0dd6a}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+.err-msg{background:rgba(224,90,90,.1);border:1px solid rgba(224,90,90,.2);border-radius:2px;padding:.6rem .9rem;font-size:.78rem;color:var(--red);display:none;margin-bottom:.8rem}
+.err-msg.visible{display:block}
+.login-bottom{text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--muted)}
+.login-bottom a{color:var(--accent);text-decoration:none}
+
+/* PORTAL VIEW — oculto por defecto, se muestra por JS */
+.portal-view{display:none;position:relative;z-index:1}
+.portal-view.active{display:block}
+
+.portal-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2.5rem;display:flex;align-items:center;justify-content:space-between}
+.portal-logo{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;color:var(--white)}
+.portal-logo span{color:var(--accent)}
+.portal-user{display:flex;align-items:center;gap:1rem}
+.user-name{font-size:.85rem;color:var(--muted)}
+.btn-sm{background:none;border:1px solid var(--border);color:var(--muted);padding:.35rem .8rem;border-radius:2px;font-size:.75rem;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm.danger:hover{border-color:var(--red);color:var(--red)}
+
+.portal-body{max-width:900px;margin:0 auto;padding:2.5rem 2rem}
+.greeting{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--white);margin-bottom:.3rem}
+.greeting-sub{color:var(--muted);font-size:.88rem;margin-bottom:2rem}
+
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-bottom:2rem}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.1rem;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.green::before{background:var(--accent)}
+.sc.gold::before{background:var(--accent2)}
+.sc.blue::before{background:var(--blue)}
+.sc .num{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--white)}
+.sc .lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:.2rem}
+
+.section-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--white);margin-bottom:1rem}
+.order-card{background:var(--card);border:1px solid var(--border);border-radius:4px;margin-bottom:.8rem;overflow:hidden;transition:border-color .2s}
+.order-card:hover{border-color:rgba(168,196,90,.25)}
+.order-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;cursor:pointer;user-select:none}
+.order-head-left{display:flex;align-items:center;gap:1rem}
+.order-id{font-family:'Playfair Display',serif;font-size:1rem;color:var(--white)}
+.order-date{font-size:.75rem;color:var(--muted)}
+.order-total-chip{font-size:.85rem;font-weight:500;color:var(--accent)}
+.badge{display:inline-block;font-size:.65rem;padding:.18rem .55rem;border-radius:2px;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.bp{background:rgba(232,184,75,.15);color:var(--accent2)}
+.bc{background:rgba(90,159,224,.15);color:var(--blue)}
+.bpr{background:rgba(168,196,90,.15);color:var(--accent)}
+.bs{background:rgba(168,196,90,.25);color:#c0dd6a}
+.bd{background:rgba(168,196,90,.1);color:var(--accent)}
+.bx{background:rgba(224,90,90,.1);color:var(--red)}
+.order-toggle{color:var(--muted);font-size:.8rem;transition:transform .3s}
+.order-body{display:none;border-top:1px solid var(--border);padding:1rem 1.2rem}
+.order-body.open{display:block}
+.order-items-list{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.8rem}
+.oi{display:flex;justify-content:space-between;align-items:center;font-size:.83rem;padding:.3rem 0;border-bottom:1px solid rgba(42,45,30,.4)}
+.oi:last-child{border-bottom:none}
+.oi-name{color:var(--text)}
+.oi-detail{color:var(--muted);font-size:.75rem}
+.oi-sub{color:var(--accent);font-weight:500}
+.order-total-line{display:flex;justify-content:space-between;padding-top:.6rem;border-top:1px solid var(--border);font-size:.88rem}
+.order-total-line span:last-child{color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem}
+.nota-box{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:.6rem .8rem;font-size:.78rem;color:var(--muted);margin-top:.6rem}
+.empty-orders{text-align:center;padding:3rem;color:var(--muted);font-size:.88rem}
+.empty-orders a{color:var(--accent);text-decoration:none}
+.spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- LOGIN -->
+<div class="login-view" id="loginView">
+  <div class="login-wrap">
+    <div class="logo">Bielsa<span>Sys</span><small>Portal de Cliente B2B</small></div>
+    <div class="login-card">
+      <h2>Acceder a mi cuenta</h2>
+      <p>Consulta tus pedidos y gestiona tu cuenta B2B.</p>
+      <div class="err-msg" id="loginErr"></div>
+      <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="pedidos@restaurante.com"></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-login" id="loginBtn">Entrar →</button>
+    </div>
+    <div class="login-bottom">¿No tienes cuenta? <a href="/registro">Regístrate gratis</a> · <a href="/">Volver a la tienda</a></div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal-view" id="portalView">
+  <nav class="portal-nav">
+    <div class="portal-logo">Bielsa<span>Sys</span></div>
+    <div class="portal-user">
+      <span class="user-name" id="portalUserName"></span>
+      <button class="btn-sm" id="btnTienda">← Tienda</button>
+      <button class="btn-sm danger" id="btnLogout">Cerrar sesión</button>
+    </div>
+  </nav>
+  <div class="portal-body">
+    <div class="greeting">Hola, <span id="portalGreetName"></span> 👋</div>
+    <div class="greeting-sub" id="portalGreetSub"></div>
+    <div class="summary-cards">
+      <div class="sc green"><div class="num" id="sc-total">—</div><div class="lbl">Pedidos totales</div></div>
+      <div class="sc gold"><div class="num" id="sc-pending">—</div><div class="lbl">Pendientes</div></div>
+      <div class="sc blue"><div class="num" id="sc-spent">—</div><div class="lbl">Gasto total (€)</div></div>
+    </div>
+    <div class="section-title">Historial de pedidos</div>
+    <div id="ordersContainer"><div style="text-align:center;padding:2rem"><span class="spinner"></span></div></div>
+  </div>
+</div>
+
+<script>
+const STATUS_LABEL = {pendiente:'Pendiente',confirmado:'Confirmado',en_preparacion:'En preparación',enviado:'Enviado',entregado:'Entregado',cancelado:'Cancelado'};
+const STATUS_CLASS  = {pendiente:'bp',confirmado:'bc',en_preparacion:'bpr',enviado:'bs',entregado:'bd',cancelado:'bx'};
+
+let clientToken = null;
+let myOrders    = [];
+
+// ── Vistas ─────────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('portalView').classList.remove('active');
+  document.getElementById('loginView').classList.add('active');
+  document.getElementById('loginErr').classList.remove('visible');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled    = false;
+  btn.textContent = 'Entrar →';
+  setTimeout(() => document.getElementById('loginEmail').focus(), 80);
+}
+
+function showPortal(cliente) {
+  document.getElementById('loginView').classList.remove('active');
+  document.getElementById('portalView').classList.add('active');
+  document.getElementById('portalUserName').textContent  = cliente.nombre + (cliente.empresa ? ' · ' + cliente.empresa : '');
+  document.getElementById('portalGreetName').textContent = cliente.nombre.split(' ')[0];
+  document.getElementById('portalGreetSub').textContent  = cliente.empresa ? 'Cuenta B2B · ' + cliente.empresa : 'Cuenta B2B';
+  loadOrders();
+}
+
+// ── Arranque ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Botones — enlazados una sola vez aquí, nunca con onclick inline
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('btnTienda').addEventListener('click', () => window.location.href = '/');
+  document.getElementById('btnLogout').addEventListener('click', doLogout);
+  document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('loginPass').addEventListener('keydown',  e => { if (e.key === 'Enter') doLogin(); });
+
+  // Comprobar si hay sesión guardada
+  initSession();
+});
+
+async function initSession() {
+  clientToken = sessionStorage.getItem('bielsa_client_token');
+  if (clientToken) {
+    try {
+      const r = await fetch('/api/cliente/check', { headers: { Authorization: 'Bearer ' + clientToken } });
+      if (r.ok) {
+        const d = await r.json();
+        showPortal(d.cliente);
+        return;
+      }
+    } catch (_) {}
+    sessionStorage.removeItem('bielsa_client_token');
+    clientToken = null;
+  }
+  showLogin();
+}
+
+// ── Login ──────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showErr('Introduce email y contraseña.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
+  try {
+    const r = await fetch('/api/cliente/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Credenciales incorrectas.');
+    sessionStorage.setItem('bielsa_client_token', d.token);
+    clientToken = d.token;
+    showPortal(d.cliente);
+  } catch (e) {
+    showErr(e.message);
+    btn.disabled = false; btn.textContent = 'Entrar →';
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+// ── Logout ─────────────────────────────────────────────────
+function doLogout() {
+  sessionStorage.removeItem('bielsa_client_token');
+  clientToken = null;
+  myOrders    = [];
+  showLogin();
+}
+
+// ── Pedidos ────────────────────────────────────────────────
+async function loadOrders() {
+  const c = document.getElementById('ordersContainer');
+  c.innerHTML = '<div style="text-align:center;padding:2rem"><span class="spinner"></span></div>';
+  try {
+    const r = await fetch('/api/orders/mine', { headers: { Authorization: 'Bearer ' + clientToken } });
+    if (!r.ok) throw new Error();
+    myOrders = await r.json();
+    document.getElementById('sc-total').textContent   = myOrders.length;
+    document.getElementById('sc-pending').textContent = myOrders.filter(o => o.estado === 'pendiente').length;
+    const spent = myOrders.filter(o => o.estado !== 'cancelado').reduce((s, o) => s + o.total, 0);
+    document.getElementById('sc-spent').textContent   = spent.toFixed(0);
+    renderOrders();
+  } catch {
+    c.innerHTML = '<div class="empty-orders">⚠ Error al cargar pedidos.</div>';
+  }
+}
+
+function renderOrders() {
+  const c = document.getElementById('ordersContainer');
+  if (!myOrders.length) {
+    c.innerHTML = '<div class="empty-orders">📦 Aún no tienes pedidos.<br><br><a href="/">Ver catálogo →</a></div>';
+    return;
+  }
+  c.innerHTML = myOrders.map((o, i) => `
+    <div class="order-card">
+      <div class="order-head" data-i="${i}">
+        <div class="order-head-left">
+          <div>
+            <div class="order-id">Pedido #${o.id}</div>
+            <div class="order-date">${new Date(o.createdAt).toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</div>
+          </div>
+          <span class="badge ${STATUS_CLASS[o.estado]||'bp'}">${STATUS_LABEL[o.estado]||o.estado}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem">
+          <span class="order-total-chip">${o.total.toFixed(2)} €</span>
+          <span class="order-toggle" id="tog-${i}">▼</span>
+        </div>
+      </div>
+      <div class="order-body" id="body-${i}">
+        <div class="order-items-list">
+          ${o.items.map(it=>`
+            <div class="oi">
+              <div><span class="oi-name">${it.emoji||''} ${it.nombre}</span><br>
+              <span class="oi-detail">${it.precio.toFixed(2)} €/${it.unidad} × ${it.cantidad} ${it.unidad}</span></div>
+              <span class="oi-sub">${(it.precio*it.cantidad).toFixed(2)} €</span>
+            </div>`).join('')}
+        </div>
+        <div class="order-total-line"><span>Total</span><span>${o.total.toFixed(2)} €</span></div>
+        ${o.fechaEntrega?`<div class="nota-box">📅 Entrega solicitada: ${o.fechaEntrega}</div>`:''}
+        ${o.nota?`<div class="nota-box">📝 Nota: ${o.nota}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  // Eventos de los acordeones (delegación en el contenedor)
+  c.addEventListener('click', e => {
+    const head = e.target.closest('.order-head');
+    if (!head) return;
+    const i    = head.dataset.i;
+    const body = document.getElementById('body-' + i);
+    const tog  = document.getElementById('tog-'  + i);
+    const open = body.classList.toggle('open');
+    tog.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+}
+</script>
+</body>
+</html>
