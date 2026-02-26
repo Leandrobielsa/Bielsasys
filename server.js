@@ -144,7 +144,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 3. Autenticación y Gestión de Clientes B2B (NUEVO)
+  // 3. Autenticación y Gestión de Clientes B2B
   if (method === 'POST' && url === '/api/cliente/registro') {
     try {
       const { nombre, email, password, empresa, cif, telefono } = await parseBody(req);
@@ -153,7 +153,7 @@ const server = http.createServer(async (req, res) => {
       const check = await pool.query('SELECT id FROM clients WHERE email = $1', [email]);
       if (check.rows.length > 0) { send(res, 400, {error:'El email ya está registrado.'}); return; }
 
-      const hash = crypto.createHash('sha256').update(password).digest('hex'); // Encriptación SHA256 nativa
+      const hash = crypto.createHash('sha256').update(password).digest('hex');
       const query = `INSERT INTO clients (nombre, empresa, cif, email, telefono, "passwordHash", estado) VALUES ($1, $2, $3, $4, $5, $6, 'pendiente') RETURNING id, nombre, email, empresa`;
       const result = await pool.query(query, [nombre, empresa||'', cif||'', email, telefono||'', hash]);
       
@@ -176,7 +176,7 @@ const server = http.createServer(async (req, res) => {
       if (client.estado === 'rechazado') { send(res, 403, {error:'Cuenta rechazada por un administrador.'}); return; }
       
       const token = jwtSign({ id: client.id, email: client.email, role: 'cliente' });
-      delete client.passwordHash; // No enviamos la contraseña al frontend
+      delete client.passwordHash;
       send(res, 200, { token, cliente: client });
     } catch(e) { send(res, 500, {error: e.message}); }
     return;
@@ -220,7 +220,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5. API Pedidos (Admin y Cliente)
+  // 5. API Pedidos
   if (method==='GET' && url==='/api/orders') {
     if (!requireAuth(req,res)) return;
     try {
@@ -270,7 +270,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 6. API Clientes Admin (Ver y aprobar solicitudes)
+  // 6. API Clientes Admin
   if (method==='GET' && url==='/api/clients') {
     if (!requireAuth(req,res)) return;
     try {
@@ -328,6 +328,35 @@ const server = http.createServer(async (req, res) => {
       const newProduct = result.rows[0]; newProduct.price = parseFloat(newProduct.price);
       send(res,201,newProduct);
     } catch(e) { send(res,500,{error:e.message}); }
+    return;
+  }
+
+  // PUT /api/products/:id — 🔒 Admin (Editar producto)
+  const putMatch = url.match(/^\/api\/products\/(\d+)$/);
+  if (method === 'PUT' && putMatch) {
+    if (!requireAuth(req,res)) return;
+    try {
+      const id = parseInt(putMatch[1]);
+      const {name, category, emoji, price, unit, origin, badge, badgeType, minOrder} = await parseBody(req);
+      
+      if (!name || !price || !category) { send(res, 400, {error:'Faltan datos obligatorios'}); return; }
+      
+      const query = `
+        UPDATE products 
+        SET name = $1, category = $2, emoji = $3, price = $4, unit = $5, origin = $6, badge = $7, badgeType = $8, minOrder = $9 
+        WHERE id = $10 RETURNING *;
+      `;
+      const values = [name, category, emoji||'📦', parseFloat(price), unit||'kg', origin||'', badge||'', badgeType||'', minOrder||'', id];
+      
+      const result = await pool.query(query, values);
+      
+      if (result.rowCount === 0) { send(res, 404, {error:'Producto no encontrado'}); return; }
+      
+      const updatedProduct = result.rows[0]; 
+      updatedProduct.price = parseFloat(updatedProduct.price);
+      
+      send(res, 200, updatedProduct);
+    } catch(e) { send(res, 500, {error: e.message}); }
     return;
   }
 
