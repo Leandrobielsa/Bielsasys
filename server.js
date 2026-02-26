@@ -328,11 +328,11 @@ const server = http.createServer(async (req, res) => {
   send(res, 404, {error:'Ruta no encontrada en la API'});
 });
 
-server.listen(PORT, () => {
+// Añadimos '0.0.0.0' para que escuche en todas las interfaces de red del contenedor
+server.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  ✅  BielsaSys Backend en marcha');
   console.log('  🐘  Conectado a PostgreSQL');
-  console.log(`  🌐  Tienda:  http://localhost:${PORT}`);
-  console.log(`  🔧  Admin:   http://localhost:${PORT}/admin`);
+  console.log(`  🌐  Tienda escuchando en el puerto: ${PORT}`);
   console.log('');
 });
