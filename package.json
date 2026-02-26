@@ -10,5 +10,8 @@
     "node": ">=18.0.0"
   },
   "author": "Leandro Bielsa Raro",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pg": "^8.19.0"
+  }
 }
