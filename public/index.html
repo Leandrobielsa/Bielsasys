@@ -543,17 +543,35 @@ function toggleCart(){document.getElementById('cartPanel').classList.toggle('ope
 
 async function sendCartOrder() {
   if(!clientToken){ toast('Inicia sesión para tramitar pedidos'); setTimeout(()=>location.href='/portal',1500); return; }
+  
   const items = Object.entries(cart).filter(([,q])=>q>0).map(([id,qty])=>{
     const p=allProducts.find(x=>x.id==id);
     return p ? {nombre:p.name,emoji:p.emoji,precio:p.price,cantidad:qty,unidad:p.unit} : null;
   }).filter(Boolean);
+  
   if(!items.length) return;
+  
   try {
-    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+clientToken},body:JSON.stringify({items,nota:''})});
-    if(!r.ok) throw new Error();
+    const r = await fetch('/api/orders', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+clientToken},
+      body:JSON.stringify({items,nota:''})
+    });
+    
+    const data = await r.json();
+    
+    if(!r.ok) {
+      // Si el servidor lanza un error (ej. cuenta no aprobada), lanzamos ese mensaje
+      throw new Error(data.error || 'Error desconocido al enviar pedido');
+    }
+    
     cart={}; updateCart(); toggleCart();
     toast('✅ Pedido enviado correctamente');
-  } catch { toast('Error al enviar pedido'); }
+    
+  } catch(e) { 
+    // Ahora el toast mostrará el motivo real del error
+    toast('❌ ' + e.message); 
+  }
 }
 
 function submitOrder(){toast('✅ Pedido enviado. Confirmaremos en breve.');}
