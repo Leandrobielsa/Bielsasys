@@ -19,13 +19,19 @@ const JWT_EXPIRES_IN = 8 * 60 * 60; // 8 horas en segundos
 // ══════════════════════════════════════════════
 //  Conexión a PostgreSQL
 // ══════════════════════════════════════════════
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || 'bielsauser',
-  password: process.env.DB_PASS || 'bielsapassword',
-  database: process.env.DB_NAME || 'bielsasys',
-});
+const pool = process.env.DATABASE_URL 
+  ? new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      // En muchos proveedores cloud es necesario activar SSL para conexiones externas
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      user: process.env.DB_USER || 'bielsauser',
+      password: process.env.DB_PASS || 'bielsapassword',
+      database: process.env.DB_NAME || 'bielsasys',
+    });
 
 // Inicializar base de datos y todas las tablas necesarias
 async function initDB() {
