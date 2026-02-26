@@ -22,7 +22,6 @@ const JWT_EXPIRES_IN = 8 * 60 * 60; // 8 horas en segundos
 const pool = process.env.DATABASE_URL 
   ? new Pool({ 
       connectionString: process.env.DATABASE_URL,
-      // En muchos proveedores cloud es necesario activar SSL para conexiones externas
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     })
   : new Pool({
@@ -33,91 +32,31 @@ const pool = process.env.DATABASE_URL
       database: process.env.DB_NAME || 'bielsasys',
     });
 
-// Inicializar base de datos y todas las tablas necesarias
+// Inicializar base de datos
 async function initDB() {
   try {
-    // 1. Tabla de Productos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        category VARCHAR(50),
-        emoji VARCHAR(10),
-        price DECIMAL(10,2),
-        unit VARCHAR(20),
-        origin VARCHAR(100),
-        badge VARCHAR(50),
-        badgeType VARCHAR(20),
-        minOrder VARCHAR(30),
-        stock BOOLEAN DEFAULT TRUE
+        id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, category VARCHAR(50), emoji VARCHAR(10),
+        price DECIMAL(10,2), unit VARCHAR(20), origin VARCHAR(100), badge VARCHAR(50),
+        badgeType VARCHAR(20), minOrder VARCHAR(30), stock BOOLEAN DEFAULT TRUE
       );
     `);
-
-    // 2. Tabla de Clientes
     await pool.query(`
       CREATE TABLE IF NOT EXISTS clients (
-        id SERIAL PRIMARY KEY,
-        nombre VARCHAR(100),
-        empresa VARCHAR(100),
-        cif VARCHAR(20),
-        email VARCHAR(100) UNIQUE,
-        telefono VARCHAR(20),
-        "passwordHash" VARCHAR(255),
-        estado VARCHAR(20) DEFAULT 'activo',
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id SERIAL PRIMARY KEY, nombre VARCHAR(100), empresa VARCHAR(100), cif VARCHAR(20),
+        email VARCHAR(100) UNIQUE, telefono VARCHAR(20), "passwordHash" VARCHAR(255),
+        estado VARCHAR(20) DEFAULT 'activo', "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    // 3. Tabla de Pedidos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        "clientId" INT,
-        "clienteNombre" VARCHAR(100),
-        "clienteEmpresa" VARCHAR(100),
-        "clienteEmail" VARCHAR(100),
-        items JSONB,
-        total DECIMAL(10,2),
-        nota TEXT,
-        "fechaEntrega" VARCHAR(50),
-        estado VARCHAR(20) DEFAULT 'pendiente',
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id SERIAL PRIMARY KEY, "clientId" INT, "clienteNombre" VARCHAR(100), "clienteEmpresa" VARCHAR(100),
+        "clienteEmail" VARCHAR(100), items JSONB, total DECIMAL(10,2), nota TEXT, "fechaEntrega" VARCHAR(50),
+        estado VARCHAR(20) DEFAULT 'pendiente', "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    // Inserciones iniciales si las tablas están vacías
-    const countProd = await pool.query('SELECT COUNT(*) FROM products');
-    if (parseInt(countProd.rows[0].count) === 0) {
-      console.log('📦 Insertando productos iniciales...');
-      const initialProducts = [
-        "('Naranja Valencia Extra', 'citrico', '🍊', 0.38, 'kg', 'Valencia', 'Temporada', '', '50 kg', true)",
-        "('Limón Fino Murcia', 'citrico', '🍋', 0.65, 'kg', 'Murcia', '', '', '25 kg', true)",
-        "('Tomate Pera', 'verdura', '🍅', 1.20, 'kg', 'Almería', 'Eco', 'eco', '20 kg', true)",
-        "('Fresas Huelva', 'fruta', '🍓', 2.20, 'kg', 'Huelva', 'Temporada', '', '10 kg', true)"
-      ];
-      await pool.query(`INSERT INTO products (name, category, emoji, price, unit, origin, badge, badgeType, minOrder, stock) VALUES ${initialProducts.join(',')}`);
-    }
-
-    const countCli = await pool.query('SELECT COUNT(*) FROM clients');
-    if (parseInt(countCli.rows[0].count) === 0) {
-      console.log('👥 Insertando clientes iniciales...');
-      await pool.query(`INSERT INTO clients (nombre, empresa, cif, email, telefono, estado) VALUES
-        ('Sergio', 'Vermuteria', '53786229Q', 'sergio@gmail.com', '674718213', 'activo'),
-        ('sori', '50 caños', '53786224Q', 'sori@gmail.com', '673728213', 'activo')
-      `);
-    }
-
-    const countOrd = await pool.query('SELECT COUNT(*) FROM orders');
-    if (parseInt(countOrd.rows[0].count) === 0) {
-      console.log('📋 Insertando pedidos iniciales...');
-      await pool.query(`INSERT INTO orders ("clientId", "clienteNombre", "clienteEmpresa", "clienteEmail", items, total, estado) VALUES
-        (1, 'Sergio', 'Vermuteria', 'sergio@gmail.com', '[{"nombre":"Fresas Huelva","emoji":"🍓","precio":2.2,"cantidad":1,"unidad":"kg"}]', 2.2, 'entregado'),
-        (2, 'sori', '50 caños', 'sori@gmail.com', '[{"nombre":"Tomate Pera","emoji":"🍅","precio":1.2,"cantidad":1,"unidad":"kg"}]', 1.2, 'pendiente')
-      `);
-    }
-
-    console.log('✅ Base de datos PostgreSQL inicializada con todas las tablas.');
+    console.log('✅ Base de datos PostgreSQL inicializada.');
   } catch (err) {
     console.error('❌ Error al inicializar PostgreSQL:', err);
   }
@@ -148,8 +87,8 @@ function jwtVerify(token) {
 function extractToken(req) { const auth = req.headers['authorization'] || ''; return auth.startsWith('Bearer ') ? auth.slice(7) : null; }
 function requireAuth(req, res) {
   const payload = jwtVerify(extractToken(req) || '');
-  if (!payload) { send(res, 401, {error:'No autorizado. Inicia sesión.'}); return false; }
-  return true;
+  if (!payload) { send(res, 401, {error:'No autorizado.'}); return false; }
+  return payload; // Devolvemos el payload para saber quién es
 }
 
 // ══════════════════════════════════════════════
@@ -157,8 +96,7 @@ function requireAuth(req, res) {
 // ══════════════════════════════════════════════
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', c => body += c);
+    let body = ''; req.on('data', c => body += c);
     req.on('end', () => { try { resolve(body ? JSON.parse(body) : {}); } catch(e) { reject(e); } });
   });
 }
@@ -182,14 +120,14 @@ const server = http.createServer(async (req, res) => {
 
   if (method === 'OPTIONS') { send(res, 204, {}); return; }
 
-  // 1. Archivos estáticos (Frontend)
+  // 1. Archivos estáticos
   if (method==='GET' && url==='/') { serveFile(res, path.join(__dirname,'public','index.html'), 'text/html'); return; }
   if (method==='GET' && url==='/login') { serveFile(res, path.join(__dirname,'public','login.html'), 'text/html'); return; }
   if (method==='GET' && url==='/admin') { serveFile(res, path.join(__dirname,'public','admin.html'), 'text/html'); return; }
   if (method==='GET' && url==='/portal') { serveFile(res, path.join(__dirname,'public','portal.html'), 'text/html'); return; }
   if (method==='GET' && url==='/registro') { serveFile(res, path.join(__dirname,'public','registro.html'), 'text/html'); return; }
 
-  // 2. Autenticación Admin
+  // 2. Autenticación Administrador
   if (method==='POST' && url==='/api/login') {
     try {
       const {username, password} = await parseBody(req);
@@ -202,60 +140,121 @@ const server = http.createServer(async (req, res) => {
 
   if (method==='GET' && url==='/api/auth/check') {
     const p = jwtVerify(extractToken(req)||'');
-    p ? send(res, 200, {valid:true, username:p.username}) : send(res, 401, {valid:false});
+    p && p.role === 'admin' ? send(res, 200, {valid:true, username:p.username}) : send(res, 401, {valid:false});
     return;
   }
 
-  // 3. API Dashboard (Estadísticas)
+  // 3. Autenticación y Gestión de Clientes B2B (NUEVO)
+  if (method === 'POST' && url === '/api/cliente/registro') {
+    try {
+      const { nombre, email, password, empresa, cif, telefono } = await parseBody(req);
+      if (!nombre || !email || !password) { send(res, 400, {error:'Faltan datos obligatorios.'}); return; }
+      
+      const check = await pool.query('SELECT id FROM clients WHERE email = $1', [email]);
+      if (check.rows.length > 0) { send(res, 400, {error:'El email ya está registrado.'}); return; }
+
+      const hash = crypto.createHash('sha256').update(password).digest('hex'); // Encriptación SHA256 nativa
+      const query = `INSERT INTO clients (nombre, empresa, cif, email, telefono, "passwordHash", estado) VALUES ($1, $2, $3, $4, $5, $6, 'pendiente') RETURNING id, nombre, email, empresa`;
+      const result = await pool.query(query, [nombre, empresa||'', cif||'', email, telefono||'', hash]);
+      
+      const client = result.rows[0];
+      const token = jwtSign({ id: client.id, email: client.email, role: 'cliente' });
+      send(res, 201, { token, cliente: client });
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  if (method === 'POST' && url === '/api/cliente/login') {
+    try {
+      const { email, password } = await parseBody(req);
+      const hash = crypto.createHash('sha256').update(password).digest('hex');
+      
+      const result = await pool.query('SELECT * FROM clients WHERE email = $1 AND "passwordHash" = $2', [email, hash]);
+      if (result.rows.length === 0) { setTimeout(() => send(res, 401, {error:'Credenciales incorrectas.'}), 600); return; }
+      
+      const client = result.rows[0];
+      if (client.estado === 'rechazado') { send(res, 403, {error:'Cuenta rechazada por un administrador.'}); return; }
+      
+      const token = jwtSign({ id: client.id, email: client.email, role: 'cliente' });
+      delete client.passwordHash; // No enviamos la contraseña al frontend
+      send(res, 200, { token, cliente: client });
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  if (method === 'GET' && url === '/api/cliente/check') {
+    const payload = jwtVerify(extractToken(req) || '');
+    if (!payload || payload.role !== 'cliente') { send(res, 401, {valid:false}); return; }
+    try {
+      const result = await pool.query('SELECT * FROM clients WHERE id = $1', [payload.id]);
+      if (result.rows.length === 0) { send(res, 401, {valid:false}); return; }
+      const client = result.rows[0]; delete client.passwordHash;
+      send(res, 200, { valid: true, cliente: client });
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  // 4. API Panel de Administración
   if (method==='GET' && url==='/api/stats') {
     if (!requireAuth(req,res)) return;
     try {
       const ordersRes = await pool.query('SELECT * FROM orders');
       const clientsRes = await pool.query('SELECT COUNT(*) FROM clients');
       const prodsRes = await pool.query('SELECT COUNT(*) FROM products');
-
       const orders = ordersRes.rows;
-      let totalRevenue = 0; let pendingOrders = 0;
-      const byStatus = {}; const productCounts = {};
+      let totalRevenue = 0; let pendingOrders = 0; const byStatus = {}; const productCounts = {};
 
       orders.forEach(o => {
-        const total = parseFloat(o.total);
-        totalRevenue += total;
+        const total = parseFloat(o.total); totalRevenue += total;
         if (o.estado === 'pendiente') pendingOrders++;
         byStatus[o.estado] = (byStatus[o.estado] || 0) + 1;
-
         if (o.items) {
           let itemsArr = typeof o.items === 'string' ? JSON.parse(o.items) : o.items;
           itemsArr.forEach(i => { productCounts[i.nombre] = (productCounts[i.nombre] || 0) + i.cantidad; });
         }
       });
 
-      const topProducts = Object.entries(productCounts)
-        .map(([nombre, cantidad]) => ({ nombre, cantidad })).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
-
-      send(res, 200, {
-        totalOrders: orders.length,
-        monthOrders: orders.length, // Simplificado para que coincida
-        pendingOrders,
-        monthRevenue: totalRevenue,
-        totalRevenue,
-        totalClients: parseInt(clientsRes.rows[0].count),
-        totalProducts: parseInt(prodsRes.rows[0].count),
-        last7: [{ dia: 'Hoy', pedidos: orders.length }],
-        byStatus,
-        topProducts
-      });
+      const topProducts = Object.entries(productCounts).map(([nombre, cantidad]) => ({ nombre, cantidad })).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
+      send(res, 200, { totalOrders: orders.length, monthOrders: orders.length, pendingOrders, monthRevenue: totalRevenue, totalRevenue, totalClients: parseInt(clientsRes.rows[0].count), totalProducts: parseInt(prodsRes.rows[0].count), last7: [{ dia: 'Hoy', pedidos: orders.length }], byStatus, topProducts });
     } catch(e) { send(res, 500, {error: e.message}); }
     return;
   }
 
-  // 4. API Pedidos y Clientes
+  // 5. API Pedidos (Admin y Cliente)
   if (method==='GET' && url==='/api/orders') {
     if (!requireAuth(req,res)) return;
     try {
       const result = await pool.query('SELECT * FROM orders ORDER BY id DESC');
-      const orders = result.rows.map(o => ({ ...o, total: parseFloat(o.total) }));
-      send(res, 200, orders);
+      send(res, 200, result.rows.map(o => ({ ...o, total: parseFloat(o.total) })));
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  if (method === 'GET' && url === '/api/orders/mine') {
+    const payload = jwtVerify(extractToken(req) || '');
+    if (!payload || payload.role !== 'cliente') { send(res, 401, {error:'No autorizado'}); return; }
+    try {
+      const result = await pool.query('SELECT * FROM orders WHERE "clientId" = $1 ORDER BY id DESC', [payload.id]);
+      send(res, 200, result.rows.map(o => ({ ...o, total: parseFloat(o.total) })));
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  if (method === 'POST' && url === '/api/orders') {
+    const payload = jwtVerify(extractToken(req) || '');
+    if (!payload || payload.role !== 'cliente') { send(res, 401, {error:'No autorizado'}); return; }
+    try {
+      const { items, nota } = await parseBody(req);
+      if (!items || !items.length) { send(res, 400, {error:'El pedido está vacío'}); return; }
+      
+      const cliRes = await pool.query('SELECT * FROM clients WHERE id = $1', [payload.id]);
+      const client = cliRes.rows[0];
+      if (client.estado !== 'activo') { send(res, 403, {error:'Cuenta pendiente de aprobación.'}); return; }
+      
+      const total = items.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+      const query = `INSERT INTO orders ("clientId", "clienteNombre", "clienteEmpresa", "clienteEmail", items, total, nota, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendiente') RETURNING *`;
+      const result = await pool.query(query, [client.id, client.nombre, client.empresa, client.email, JSON.stringify(items), total, nota||'']);
+      send(res, 201, result.rows[0]);
     } catch(e) { send(res, 500, {error: e.message}); }
     return;
   }
@@ -271,10 +270,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 6. API Clientes Admin (Ver y aprobar solicitudes)
   if (method==='GET' && url==='/api/clients') {
     if (!requireAuth(req,res)) return;
     try {
-      const result = await pool.query('SELECT * FROM clients ORDER BY id DESC');
+      const result = await pool.query("SELECT id, nombre, empresa, cif, email, telefono, estado, \"createdAt\" FROM clients ORDER BY id DESC");
       send(res, 200, result.rows);
     } catch(e) { send(res, 500, {error: e.message}); }
     return;
@@ -289,7 +289,27 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5. API Productos (Público y Admin)
+  const approveMatch = url.match(/^\/api\/clients\/(\d+)\/approve$/);
+  if (method === 'PUT' && approveMatch) {
+    if (!requireAuth(req,res)) return;
+    try {
+      await pool.query("UPDATE clients SET estado = 'activo' WHERE id = $1", [parseInt(approveMatch[1])]);
+      send(res, 200, { success: true });
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  const rejectMatch = url.match(/^\/api\/clients\/(\d+)\/reject$/);
+  if (method === 'PUT' && rejectMatch) {
+    if (!requireAuth(req,res)) return;
+    try {
+      await pool.query("UPDATE clients SET estado = 'rechazado' WHERE id = $1", [parseInt(rejectMatch[1])]);
+      send(res, 200, { success: true });
+    } catch(e) { send(res, 500, {error: e.message}); }
+    return;
+  }
+
+  // 7. API Productos
   if (method==='GET' && url==='/api/products') {
     try {
       const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
@@ -303,12 +323,9 @@ const server = http.createServer(async (req, res) => {
     try {
       const {name,category,emoji,price,unit,origin,badge,badgeType,minOrder} = await parseBody(req);
       if (!name||!price||!category) { send(res,400,{error:'Faltan: name, price, category'}); return; }
-      
       const query = `INSERT INTO products (name, category, emoji, price, unit, origin, badge, badgeType, minOrder, stock) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`;
-      const values = [name, category, emoji||'📦', parseFloat(price), unit||'kg', origin||'', badge||'', badgeType||'', minOrder||'10 kg', true];
-      const result = await pool.query(query, values);
+      const result = await pool.query(query, [name, category, emoji||'📦', parseFloat(price), unit||'kg', origin||'', badge||'', badgeType||'', minOrder||'10 kg', true]);
       const newProduct = result.rows[0]; newProduct.price = parseFloat(newProduct.price);
-      
       send(res,201,newProduct);
     } catch(e) { send(res,500,{error:e.message}); }
     return;
@@ -328,11 +345,10 @@ const server = http.createServer(async (req, res) => {
   send(res, 404, {error:'Ruta no encontrada en la API'});
 });
 
-// Añadimos '0.0.0.0' para que escuche en todas las interfaces de red del contenedor
 server.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  ✅  BielsaSys Backend en marcha');
   console.log('  🐘  Conectado a PostgreSQL');
-  console.log(`  🌐  Tienda escuchando en el puerto: ${PORT}`);
+  console.log(`  🌐  Servidor escuchando en el puerto: ${PORT}`);
   console.log('');
 });
