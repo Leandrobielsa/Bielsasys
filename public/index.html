@@ -125,32 +125,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .info-text strong{display:block;color:var(--white);font-size:.85rem;margin-bottom:.15rem}
 .info-text span{color:var(--muted);font-size:.78rem}
 
-/* VISUAL PROCESO PEDIDO (derecha sección #pedido) */
-.ov-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
-.ov-summary{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.1rem 1.2rem;margin-bottom:.7rem}
-.ov-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;padding:.25rem 0;border-bottom:1px solid rgba(42,45,30,.5)}
-.ov-summary-row:last-child{border-bottom:none;padding-top:.5rem;margin-top:.2rem}
-.ov-summary-row span:first-child{color:var(--muted)}
-.ov-summary-row span:last-child{color:var(--text);font-weight:500}
-.ov-summary-row.total span:last-child{color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem}
-.order-visual{position:relative;display:flex;flex-direction:column;gap:.6rem}
-.order-visual::before{content:'';position:absolute;left:17px;top:28px;bottom:28px;width:1px;background:linear-gradient(to bottom,var(--accent),rgba(168,196,90,.1))}
-.ov-step{display:flex;align-items:center;gap:1rem;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:.9rem 1.1rem;position:relative}
-.ov-step.active{border-color:rgba(168,196,90,.4);background:rgba(168,196,90,.04)}
-.ov-step.waiting{opacity:.5}
-.ov-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;position:relative;z-index:1}
-.ov-dot.done{background:var(--accent);color:#0e0f0a}
-.ov-dot.active{background:rgba(168,196,90,.15);border:2px solid var(--accent);animation:ovPulse 2s ease-in-out infinite}
-.ov-dot.waiting{background:var(--border)}
-.ov-info{flex:1}
-.ov-title{font-size:.84rem;font-weight:500;color:var(--white)}
-.ov-sub{font-size:.71rem;color:var(--muted);margin-top:.12rem}
-.ov-badge{font-size:.61rem;padding:.2rem .55rem;border-radius:2px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;white-space:nowrap}
-.ov-badge.green{background:rgba(168,196,90,.15);color:var(--accent)}
-.ov-badge.gold{background:rgba(232,184,75,.15);color:var(--accent2)}
-.ov-badge.muted{background:rgba(122,125,106,.1);color:var(--muted)}
-@keyframes ovPulse{0%,100%{box-shadow:0 0 0 0 rgba(168,196,90,.4)}50%{box-shadow:0 0 0 6px rgba(168,196,90,0)}}
-
 /* CART */
 .cart-toggle{position:fixed;bottom:2rem;right:2rem;z-index:200;background:var(--accent);color:#0e0f0a;width:50px;height:50px;border-radius:50%;border:none;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 20px rgba(168,196,90,.3);display:flex;align-items:center;justify-content:center;transition:transform .2s}
 .cart-toggle:hover{transform:scale(1.08)}
@@ -186,6 +160,46 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;justify
 /* TOAST */
 .toast{position:fixed;bottom:5.5rem;right:2rem;z-index:400;background:var(--accent);color:#0e0f0a;padding:.6rem 1.1rem;border-radius:2px;font-size:.82rem;font-weight:500;transform:translateY(16px);opacity:0;transition:all .25s;pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
+
+.ov-step{
+  display:flex;align-items:center;gap:1rem;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:4px;padding:1rem 1.2rem;position:relative;
+  transition:border-color .3s;
+}
+.ov-step.active{border-color:rgba(168,196,90,.4);background:rgba(168,196,90,.04)}
+.ov-step.done{border-color:rgba(168,196,90,.2)}
+.ov-step.waiting{opacity:.5}
+
+.ov-dot{
+  width:18px;height:18px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:700;position:relative;z-index:1;
+}
+.ov-dot.done{background:var(--accent);color:#0e0f0a}
+.ov-dot.active{background:rgba(168,196,90,.15);border:2px solid var(--accent);animation:dotPulse 2s ease-in-out infinite}
+.ov-dot.waiting{background:var(--border);border:1px solid var(--border)}
+
+.ov-info{flex:1}
+.ov-title{font-size:.85rem;font-weight:500;color:var(--white)}
+.ov-sub{font-size:.72rem;color:var(--muted);margin-top:.15rem}
+.ov-badge{font-size:.62rem;padding:.2rem .55rem;border-radius:2px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;white-space:nowrap}
+.ov-badge.green{background:rgba(168,196,90,.15);color:var(--accent)}
+.ov-badge.gold{background:rgba(232,184,75,.15);color:var(--accent2)}
+.ov-badge.muted{background:rgba(122,125,106,.1);color:var(--muted)}
+
+/* Tarjeta resumen del pedido */
+.ov-summary{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:4px;padding:1.1rem 1.2rem;margin-bottom:.4rem;
+}
+.ov-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;padding:.25rem 0;border-bottom:1px solid rgba(42,45,30,.5)}
+.ov-summary-row:last-child{border-bottom:none;padding-top:.5rem;margin-top:.2rem}
+.ov-summary-row span:first-child{color:var(--muted)}
+.ov-summary-row span:last-child{color:var(--text);font-weight:500}
+.ov-summary-row.total span:last-child{color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem}
+
+.ov-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -304,8 +318,6 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;justify
 <!-- PEDIDO -->
 <section id="pedido">
   <div class="order-layout">
-
-    <!-- IZQUIERDA: info -->
     <div>
       <div class="section-label">Portal B2B</div>
       <h2 class="section-title" style="margin-bottom:1rem">Haz tu pedido<br>en minutos</h2>
@@ -317,45 +329,65 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;justify
         <div class="info-item"><div class="info-icon">📊</div><div class="info-text"><strong>Historial de pedidos</strong><span>Accede desde tu <a href="/portal" style="color:var(--accent)">portal de cliente</a></span></div></div>
       </div>
     </div>
-
-    <!-- DERECHA: visual flujo de pedido -->
     <div>
       <div class="ov-label">Ejemplo de pedido en curso</div>
+
+      <!-- Mini resumen del pedido -->
       <div class="ov-summary">
         <div class="ov-summary-row"><span>🍊 Naranja Valencia Extra</span><span>120 kg</span></div>
         <div class="ov-summary-row"><span>🍅 Tomate Pera Eco</span><span>40 kg</span></div>
         <div class="ov-summary-row"><span>🥬 Lechuga Romana</span><span>60 ud</span></div>
         <div class="ov-summary-row total"><span>Total estimado</span><span>112,80 €</span></div>
       </div>
+
+      <!-- Pasos del proceso -->
       <div class="order-visual">
         <div class="ov-step done">
           <div class="ov-dot done">✓</div>
-          <div class="ov-info"><div class="ov-title">Pedido recibido</div><div class="ov-sub">Hoy · 08:42 h</div></div>
+          <div class="ov-info">
+            <div class="ov-title">Pedido recibido</div>
+            <div class="ov-sub">Hoy · 08:42 h</div>
+          </div>
           <span class="ov-badge green">Completado</span>
         </div>
+
         <div class="ov-step done">
           <div class="ov-dot done">✓</div>
-          <div class="ov-info"><div class="ov-title">Confirmación de stock</div><div class="ov-sub">Todos los productos disponibles</div></div>
+          <div class="ov-info">
+            <div class="ov-title">Confirmación de stock</div>
+            <div class="ov-sub">Todos los productos disponibles</div>
+          </div>
           <span class="ov-badge green">OK</span>
         </div>
+
         <div class="ov-step active">
           <div class="ov-dot active"></div>
-          <div class="ov-info"><div class="ov-title">En preparación</div><div class="ov-sub">Almacén Central Valencia</div></div>
+          <div class="ov-info">
+            <div class="ov-title">En preparación</div>
+            <div class="ov-sub">Almacén Central Valencia</div>
+          </div>
           <span class="ov-badge gold">En curso</span>
         </div>
+
         <div class="ov-step waiting">
           <div class="ov-dot waiting"></div>
-          <div class="ov-info"><div class="ov-title">Salida a reparto</div><div class="ov-sub">Previsto mañana · 07:00 h</div></div>
+          <div class="ov-info">
+            <div class="ov-title">Salida a reparto</div>
+            <div class="ov-sub">Previsto mañana · 07:00 h</div>
+          </div>
           <span class="ov-badge muted">Pendiente</span>
         </div>
+
         <div class="ov-step waiting">
           <div class="ov-dot waiting"></div>
-          <div class="ov-info"><div class="ov-title">Entrega en destino</div><div class="ov-sub">Restaurante El Rincón · Valencia</div></div>
+          <div class="ov-info">
+            <div class="ov-title">Entrega en destino</div>
+            <div class="ov-sub">Restaurante El Rincón · Valencia</div>
+          </div>
           <span class="ov-badge muted">Pendiente</span>
         </div>
       </div>
     </div>
-
   </div>
 </section>
 

@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────
+#  BielsaSys — Docker Compose
+#  Levanta la app Node.js + Nginx como reverse proxy
+#  Proyecto ASIR · Leandro Bielsa Raro · 2025
+# ─────────────────────────────────────────────────────────────
+
+version: '3.9'
+
+services:
+
+  # ── Aplicación Node.js ──────────────────────────────────────
+  app:
+    build: .
+    container_name: bielsasys_app
+    restart: unless-stopped          # Se reinicia solo si falla (no si lo paras tú)
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASS=${ADMIN_PASS:-bielsasys2025}
+      - JWT_SECRET=${JWT_SECRET:-bielsasys_jwt_secret_cambia_esto}
+    volumes:
+      - ./db.json:/app/db.json       # Persistencia: la base de datos queda fuera del contenedor
+      - ./logs:/app/logs             # Persistencia: logs fuera del contenedor
+    networks:
+      - bielsanet
+    # No exponemos el puerto 3000 al exterior: solo Nginx lo puede ver
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Nginx Reverse Proxy ─────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: bielsasys_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"                      # Puerto público: accedes con http://IP_del_servidor
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro   # Config de Nginx (solo lectura)
+      - ./logs/nginx:/var/log/nginx              # Logs de Nginx también en la carpeta logs
+    depends_on:
+      - app                          # Nginx espera a que la app esté lista
+    networks:
+      - bielsanet
+
+# ── Red interna entre contenedores ─────────────────────────────
+networks:
+  bielsanet:
+    driver: bridge
+
+# ── Volúmenes nombrados (opcional, alternativa a bind mounts) ──
+# volumes:
+#   bielsadata:

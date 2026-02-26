@@ -152,6 +152,20 @@ td{padding:.7rem 1rem;font-size:.85rem;vertical-align:middle}
 .chip{border:1px solid var(--border);background:none;color:var(--muted);padding:.3rem .7rem;border-radius:2px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s}
 .chip.active,.chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(168,196,90,.06)}
 
+/* SOLICITUDES */
+.sol-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.2rem 1.4rem;margin-bottom:.8rem;display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap}
+.sol-avatar{width:40px;height:40px;border-radius:50%;background:rgba(168,196,90,.15);border:1px solid rgba(168,196,90,.25);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.sol-info{flex:1;min-width:180px}
+.sol-name{font-weight:500;color:var(--white);font-size:.9rem}
+.sol-detail{font-size:.75rem;color:var(--muted);margin-top:.2rem}
+.sol-date{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.sol-actions{display:flex;gap:.5rem;flex-shrink:0}
+.btn-approve{background:rgba(168,196,90,.15);border:1px solid rgba(168,196,90,.3);color:var(--accent);border-radius:2px;padding:.4rem .9rem;font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s}
+.btn-approve:hover{background:var(--accent);color:#0e0f0a}
+.btn-reject{background:rgba(224,90,90,.08);border:1px solid rgba(224,90,90,.2);color:var(--red);border-radius:2px;padding:.4rem .9rem;font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s}
+.btn-reject:hover{background:var(--red);color:#fff}
+.empty-sol{text-align:center;padding:3rem;color:var(--muted);font-size:.88rem}
+
 /* TOAST */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:900;background:var(--accent);color:#0e0f0a;padding:.65rem 1.2rem;border-radius:2px;font-size:.82rem;font-weight:500;transform:translateY(16px);opacity:0;transition:all .25s;pointer-events:none}
 .toast.err{background:var(--red);color:#fff}
@@ -168,6 +182,7 @@ td{padding:.7rem 1rem;font-size:.85rem;vertical-align:middle}
   <button class="nav-btn active" onclick="showPage('dashboard',this)"><span class="ic">📊</span> Dashboard</button>
   <button class="nav-btn" onclick="showPage('orders',this)"><span class="ic">📋</span> Pedidos <span class="nav-badge" id="pendingBadge" style="display:none">0</span></button>
   <button class="nav-btn" onclick="showPage('products',this)"><span class="ic">📦</span> Productos</button>
+  <button class="nav-btn" id="navSolicitudes" onclick="showPage('solicitudes',this)"><span class="ic">🔔</span> Solicitudes <span class="nav-badge" id="solicitudesBadge" style="display:none">0</span></button>
   <button class="nav-btn" onclick="showPage('clients',this)"><span class="ic">👥</span> Clientes</button>
   <hr class="sidebar-sep">
   <div class="sidebar-user" id="sidebarUser"></div>
@@ -294,6 +309,13 @@ td{padding:.7rem 1rem;font-size:.85rem;vertical-align:middle}
     </div>
   </div>
 
+  <!-- ═══ SOLICITUDES ═══ -->
+  <div class="page" id="page-solicitudes">
+    <div class="page-title">Solicitudes de cuenta</div>
+    <div class="page-sub">Clientes registrados pendientes de aprobación</div>
+    <div id="solicitudesContainer"><div class="table-state"><span class="spinner"></span></div></div>
+  </div>
+
 </main>
 
 <!-- ORDER DETAIL MODAL -->
@@ -408,6 +430,7 @@ function showPage(id, btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
+  if(id === 'solicitudes') loadSolicitudes();
 }
 
 // ── STATS CARDS ───────────────────────────────
@@ -696,6 +719,77 @@ function renderClients() {
   </tr>`).join('')}
   </tbody></table>`;
   document.getElementById('clientCount').textContent = clients.length;
+}
+
+// ── SOLICITUDES ───────────────────────────────
+let solicitudes = [];
+
+async function loadSolicitudes() {
+  try {
+    const r = await fetch('/api/notifications', {headers:{Authorization:'Bearer '+TOKEN}});
+    const d = await r.json();
+    solicitudes = d.pendingClients || [];
+    // Actualizar badge en sidebar
+    const badge = document.getElementById('solicitudesBadge');
+    if (solicitudes.length > 0) {
+      badge.textContent = solicitudes.length;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+    renderSolicitudes();
+  } catch(e) { console.error(e); }
+}
+
+function renderSolicitudes() {
+  const container = document.getElementById('solicitudesContainer');
+  if (!solicitudes.length) {
+    container.innerHTML = '<div class="empty-sol">✅ No hay solicitudes pendientes</div>';
+    return;
+  }
+  container.innerHTML = solicitudes.map(s => `
+    <div class="sol-card" id="sol-${s.id}">
+      <div class="sol-avatar">🏪</div>
+      <div class="sol-info">
+        <div class="sol-name">${s.nombre} ${s.empresa ? '· '+s.empresa : ''}</div>
+        <div class="sol-detail">📧 ${s.email}${s.telefono ? ' · 📞 '+s.telefono : ''}${s.cif ? ' · CIF: '+s.cif : ''}</div>
+        <div class="sol-date">Solicitado el ${new Date(s.createdAt).toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="sol-actions">
+        <button class="btn-approve" onclick="aprobarCliente(${s.id})">✓ Aprobar</button>
+        <button class="btn-reject" onclick="rechazarCliente(${s.id})">✕ Rechazar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function aprobarCliente(id) {
+  try {
+    const r = await fetch('/api/clients/'+id+'/approve', {method:'PUT', headers:{Authorization:'Bearer '+TOKEN}});
+    if (!r.ok) throw new Error();
+    solicitudes = solicitudes.filter(s => s.id !== id);
+    document.getElementById('sol-'+id)?.remove();
+    if (!solicitudes.length) renderSolicitudes();
+    const badge = document.getElementById('solicitudesBadge');
+    badge.textContent = solicitudes.length;
+    if (!solicitudes.length) badge.style.display = 'none';
+    toast('✅ Cuenta aprobada — el cliente ya puede acceder');
+    // Refrescar clientes si la lista está cargada
+    if (clients.length) { const db2 = await fetch('/api/clients',{headers:{Authorization:'Bearer '+TOKEN}}).then(r=>r.json()); clients=db2; renderClients(); }
+  } catch { toast('Error al aprobar', 'err'); }
+}
+
+async function rechazarCliente(id) {
+  try {
+    const r = await fetch('/api/clients/'+id+'/reject', {method:'PUT', headers:{Authorization:'Bearer '+TOKEN}});
+    if (!r.ok) throw new Error();
+    solicitudes = solicitudes.filter(s => s.id !== id);
+    document.getElementById('sol-'+id)?.remove();
+    if (!solicitudes.length) renderSolicitudes();
+    const badge = document.getElementById('solicitudesBadge');
+    badge.textContent = solicitudes.length;
+    if (!solicitudes.length) badge.style.display = 'none';
+    toast('Solicitud rechazada');
+  } catch { toast('Error al rechazar', 'err'); }
 }
 
 // ── HELPERS ──────────────────────────────────

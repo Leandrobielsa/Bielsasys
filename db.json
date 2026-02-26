@@ -129,6 +129,17 @@
       "passwordHash": "deb9976877cbf93a18c4ee42fc30ffc19eee0b62082c74e37c7b62ed19853da6",
       "createdAt": "2026-02-25T20:55:49.503Z",
       "estado": "activo"
+    },
+    {
+      "id": 2,
+      "nombre": "sori",
+      "empresa": "50 caños",
+      "cif": "53786224Q",
+      "email": "sori@gmail.com",
+      "telefono": "673728213",
+      "passwordHash": "8fea080c9db188966c6353186a5c50b3e309f9f847538730ad2f83a10a302ec6",
+      "createdAt": "2026-02-25T22:38:39.008Z",
+      "estado": "activo"
     }
   ],
   "orders": [
@@ -157,9 +168,9 @@
       "total": 2.8,
       "nota": "",
       "fechaEntrega": "",
-      "estado": "pendiente",
+      "estado": "entregado",
       "createdAt": "2026-02-25T21:06:39.098Z",
-      "updatedAt": "2026-02-25T21:06:39.098Z"
+      "updatedAt": "2026-02-25T22:41:56.040Z"
     },
     {
       "id": 2,
@@ -196,9 +207,45 @@
       "estado": "confirmado",
       "createdAt": "2026-02-25T21:06:49.601Z",
       "updatedAt": "2026-02-25T21:07:14.981Z"
+    },
+    {
+      "id": 3,
+      "clientId": 2,
+      "clienteNombre": "sori",
+      "clienteEmpresa": "50 caños",
+      "clienteEmail": "sori@gmail.com",
+      "items": [
+        {
+          "nombre": "Tomate Pera",
+          "emoji": "🍅",
+          "precio": 1.2,
+          "cantidad": 1,
+          "unidad": "kg"
+        },
+        {
+          "nombre": "Lechuga Romana",
+          "emoji": "🥬",
+          "precio": 0.55,
+          "cantidad": 1,
+          "unidad": "ud"
+        },
+        {
+          "nombre": "Fresas Huelva",
+          "emoji": "🍓",
+          "precio": 2.2,
+          "cantidad": 1,
+          "unidad": "kg"
+        }
+      ],
+      "total": 3.95,
+      "nota": "",
+      "fechaEntrega": "",
+      "estado": "cancelado",
+      "createdAt": "2026-02-25T22:38:52.799Z",
+      "updatedAt": "2026-02-25T22:39:14.387Z"
     }
   ],
   "nextProductId": 10,
-  "nextOrderId": 3,
-  "nextClientId": 2
+  "nextOrderId": 4,
+  "nextClientId": 3
 }
