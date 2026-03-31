@@ -111,6 +111,23 @@ function serveFile(res, filePath, ct) {
   });
 }
 
+function getContentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const contentTypes = {
+    '.css': 'text/css; charset=utf-8',
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.ico': 'image/x-icon'
+  };
+
+  return contentTypes[ext] || 'application/octet-stream';
+}
+
 // ══════════════════════════════════════════════
 //  Rutas del Servidor
 // ══════════════════════════════════════════════
@@ -126,6 +143,15 @@ const server = http.createServer(async (req, res) => {
   if (method==='GET' && url==='/admin') { serveFile(res, path.join(__dirname,'public','admin.html'), 'text/html'); return; }
   if (method==='GET' && url==='/portal') { serveFile(res, path.join(__dirname,'public','portal.html'), 'text/html'); return; }
   if (method==='GET' && url==='/registro') { serveFile(res, path.join(__dirname,'public','registro.html'), 'text/html'); return; }
+  if (method === 'GET' && !url.startsWith('/api/')) {
+    const assetPath = path.normalize(path.join(__dirname, 'public', url));
+    const publicRoot = path.join(__dirname, 'public');
+
+    if (assetPath.startsWith(publicRoot) && fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+      serveFile(res, assetPath, getContentType(assetPath));
+      return;
+    }
+  }
 
   // 2. Autenticación Administrador
   if (method==='POST' && url==='/api/login') {
